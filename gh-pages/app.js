@@ -4,7 +4,8 @@ const colors = {
   verde: { name: 'Verde oliva', swatch: '#6b7046', images: ['p3017116/k$84ab719a554796f32ba1758b956d0a78','p3078046/k$c6af87d08ac5019c6aaca9e960471308','p3078141/k$ce7693ff9fcf84e2f6f386e37be5dfa2','p3079552/k$54ba7fd865dcec1c2951e592a85c1fc1','p3079351/k$cae0509b49de51a9079237ca07861198','p3079316/k$f888cdbb59ec0131bc2426188c52a55c','p3079385/k$8b717bba24a09cf899776425d38f888b','p3079442/k$d1904cd1ed42c8de62fe1978aabcfe14','p3079529/k$d05c0e9042ab414420d34bf246816360'] }
 };
 const imageUrl = path => `https://contents.mediadecathlon.com/${path}/picture.jpg?f=1600x0&format=auto`;
-let activeColor = 'gris';
+const requestedColor = new URLSearchParams(window.location.search).get('color');
+let activeColor = Object.prototype.hasOwnProperty.call(colors, requestedColor) ? requestedColor : 'gris';
 let activeImage = 0;
 let touchStart = null;
 
@@ -16,7 +17,8 @@ const colorButtons = [...document.querySelectorAll('.color-options button')];
 const whatsappLinks = [...document.querySelectorAll('a[href*="wa.me"]')];
 
 function whatsappUrl() {
-  const message = `Hola Te Equipamos, deseo consultar y comprar la mochila Arpenaz 100 de 27 L en color ${colors[activeColor].name} a S/179.00.`;
+  const productUrl = `https://jorgesport.github.io/te-equipamos-arpenaz-27l/?color=${activeColor}#inicio`;
+  const message = `Hola Te Equipamos, deseo consultar y comprar la mochila Arpenaz 100 de 27 L en color ${colors[activeColor].name} a S/179.00.\n\nEnlace del producto: ${productUrl}`;
   return `https://wa.me/51920807184?text=${encodeURIComponent(message)}`;
 }
 function syncWhatsapp() { whatsappLinks.forEach(link => link.href = whatsappUrl()); }
@@ -45,7 +47,13 @@ function move(direction) { activeImage = (activeImage + direction + 9) % 9; rend
 
 document.querySelector('.gallery-arrow.left').addEventListener('click', () => move(-1));
 document.querySelector('.gallery-arrow.right').addEventListener('click', () => move(1));
-colorButtons.forEach((button, index) => button.addEventListener('click', () => { activeColor = Object.keys(colors)[index]; activeImage = 0; renderGallery(); }));
+colorButtons.forEach((button, index) => button.addEventListener('click', () => {
+  activeColor = Object.keys(colors)[index];
+  activeImage = 0;
+  renderGallery();
+  history.replaceState(null, '', `?color=${activeColor}#inicio`);
+  document.querySelector('.gallery').scrollIntoView({ behavior: 'smooth', block: 'start' });
+}));
 
 const nav = document.querySelector('.nav');
 const menu = document.querySelector('.menu-button');
