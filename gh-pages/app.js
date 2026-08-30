@@ -16,6 +16,43 @@ const colorName = document.querySelector('.color-picker strong');
 const colorButtons = [...document.querySelectorAll('.color-options button')];
 const whatsappLinks = [...document.querySelectorAll('a[href*="wa.me"]')];
 
+const countdown = document.createElement('section');
+countdown.className = 'offer-countdown';
+countdown.setAttribute('aria-label', 'Tiempo restante de la oferta');
+countdown.innerHTML = `
+  <div class="countdown-heading"><span>Oferta por tiempo limitado</span><strong>Termina el 30/09/2026</strong></div>
+  <div class="countdown-units">
+    <div><strong data-countdown="days">00</strong><span>Días</span></div>
+    <b>:</b>
+    <div><strong data-countdown="hours">00</strong><span>Horas</span></div>
+    <b>:</b>
+    <div><strong data-countdown="minutes">00</strong><span>Min</span></div>
+    <b>:</b>
+    <div><strong data-countdown="seconds">00</strong><span>Seg</span></div>
+  </div>`;
+document.querySelector('.stock').insertAdjacentElement('afterend', countdown);
+
+const offerEndsAt = new Date('2026-10-01T00:00:00-05:00').getTime();
+let countdownTimer;
+function updateCountdown() {
+  const remaining = Math.max(0, offerEndsAt - Date.now());
+  const days = Math.floor(remaining / 86400000);
+  const hours = Math.floor((remaining % 86400000) / 3600000);
+  const minutes = Math.floor((remaining % 3600000) / 60000);
+  const seconds = Math.floor((remaining % 60000) / 1000);
+  const values = { days, hours, minutes, seconds };
+  Object.entries(values).forEach(([unit, value]) => {
+    countdown.querySelector(`[data-countdown="${unit}"]`).textContent = String(value).padStart(2, '0');
+  });
+  if (remaining === 0) {
+    countdown.classList.add('ended');
+    countdown.querySelector('.countdown-heading').innerHTML = '<span>Promoción</span><strong>Oferta finalizada</strong>';
+    clearInterval(countdownTimer);
+  }
+}
+updateCountdown();
+countdownTimer = setInterval(updateCountdown, 1000);
+
 function whatsappUrl() {
   const productUrl = `https://jorgesport.github.io/te-equipamos-arpenaz-27l/?color=${activeColor}#inicio`;
   const message = `Hola Te Equipamos, deseo consultar y comprar la mochila Arpenaz 100 de 27 L en color ${colors[activeColor].name} a S/179.00.\n\nEnlace del producto: ${productUrl}`;
