@@ -22,6 +22,17 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - name: Activar vencimiento automático de la promoción
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          target = Path('gh-pages/escape-500-rolltop/index.html')
+          html = target.read_text(encoding='utf-8')
+          tag = '<script src="../auto-expiry.js"></script>'
+          if tag not in html:
+              html = html.replace('</body>', tag + '</body>', 1)
+              target.write_text(html, encoding='utf-8')
+          PY
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
