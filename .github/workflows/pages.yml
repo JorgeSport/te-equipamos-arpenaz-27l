@@ -33,6 +33,19 @@ jobs:
               html = html.replace('</body>', tag + '</body>', 1)
               target.write_text(html, encoding='utf-8')
           PY
+      - name: Ajustar Raincut a la única variante en oferta
+        run: |
+          python - <<'PY'
+          from pathlib import Path
+          target = Path('gh-pages/quechua-raincut-mujer/index.html')
+          html = target.read_text(encoding='utf-8')
+          old = '''<section class="section colors"><div class="wrap"><div class="eyebrow">DOS COLORES OFICIALES</div><h2>Elige cómo quieres llevarla.</h2><p class="lead">La ficha oficial muestra versiones verde y blanca. Aquí se presentan completas, sin recortar la prenda.</p><div class="colorGrid"><article class="colorCard"><img src="https://contents.mediadecathlon.com/p2644113/k$0f087bd94641b37d5774f3863062e386/picture.jpg?f=1600x0&format=auto" alt="Quechua Raincut mujer verde"><b>Verde</b><span>Variante protagonista · Ref. 8785339 - 12</span></article><article class="colorCard"><img src="https://contents.mediadecathlon.com/p1059037/k$69f79b3e4bbc2acb99ae1be1abb2bcf2/picture.jpg?f=1600x0&format=auto" alt="Quechua Raincut mujer blanca"><b>Blanco</b><span>Variante oficial</span></article></div></div></section>'''
+          new = '''<section class="section colors"><div class="wrap"><div class="eyebrow">VARIANTE EN OFERTA</div><h2>Esta es la Raincut disponible.</h2><p class="lead">La promoción de Te Equipamos corresponde únicamente a la variante verde, Ref. 8785339 - 12.</p><div class="colorGrid" style="grid-template-columns:minmax(0,720px);justify-content:center"><article class="colorCard"><img src="https://contents.mediadecathlon.com/p2644113/k$0f087bd94641b37d5774f3863062e386/picture.jpg?f=1600x0&format=auto" alt="Quechua Raincut mujer verde en oferta"><b>Verde</b><span>Única variante incluida en esta oferta · Ref. 8785339 - 12</span></article></div></div></section>'''
+          html = html.replace(old, new)
+          html = html.replace('Puedes consultar talla, color, disponibilidad o realizar tu compra directamente por WhatsApp.', 'Puedes consultar talla y disponibilidad de la variante verde o realizar tu compra directamente por WhatsApp.')
+          html = html.replace('Quisiera%20informaci%C3%B3n%20sobre%20talla%2C%20color%20y%20disponibilidad.', 'Quisiera%20informaci%C3%B3n%20sobre%20talla%20y%20disponibilidad%20de%20la%20variante%20verde.')
+          target.write_text(html, encoding='utf-8')
+          PY
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v4
         with:
