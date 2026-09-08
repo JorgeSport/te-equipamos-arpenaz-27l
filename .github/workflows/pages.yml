@@ -4,6 +4,8 @@ on:
   push:
     branches: [main]
   workflow_dispatch:
+  schedule:
+    - cron: '17 */6 * * *'
 
 permissions:
   contents: read
@@ -20,9 +22,12 @@ jobs:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}
     runs-on: ubuntu-latest
+    timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-      - name: Cargar actualidad real en Te Equipamos News
+      - name: Actualizar noticias outdoor automáticamente
+        run: python gh-pages/news/update-auto-news.py
+      - name: Cargar actualidad y contenido Te Equipamos
         run: python gh-pages/news/apply-real-news.py
       - name: Activar vencimiento automático de la promoción
         run: |
