@@ -21,57 +21,74 @@ MAX_AGE = timedelta(days=10)
 MAX_ITEMS = 24
 
 HEADERS = {
-    "User-Agent": "Mozilla/5.0 (compatible; TeEquipamosNews/1.0; +https://jorgesport.github.io/)"
+    "User-Agent": "Mozilla/5.0 (compatible; TeEquipamosNews/1.1; +https://jorgesport.github.io/)"
 }
 
 GOOGLE = "https://news.google.com/rss/search?q={q}&hl=es&gl=ES&ceid=ES:es"
 
+
+def gnews(query: str) -> str:
+    return GOOGLE.format(q=urllib.parse.quote(query))
+
+
 FEEDS = [
-    {
-        "name": "Desnivel",
-        "url": "https://www.desnivel.com/rss",
-        "category": "Outdoor",
-        "quality": 14,
-    },
     {
         "name": "RUNNEA",
         "url": "https://www.runnea.com/rss/articulos.xml",
         "category": "Deportes",
-        "quality": 12,
+        "quality": 13,
     },
     {
         "name": "Montaña y senderismo",
-        "url": GOOGLE.format(q=urllib.parse.quote('(senderismo OR trekking OR montañismo OR alpinismo) when:7d')),
+        "url": gnews('(senderismo OR trekking OR montañismo OR alpinismo) when:7d'),
         "category": "Outdoor",
-        "quality": 10,
+        "quality": 11,
     },
     {
         "name": "Trail running",
-        "url": GOOGLE.format(q=urllib.parse.quote('(trail running OR ultratrail OR carreras por montaña) when:7d')),
+        "url": gnews('(trail running OR ultratrail OR carreras por montaña) when:7d'),
         "category": "Deportes",
-        "quality": 10,
+        "quality": 11,
     },
     {
         "name": "Ciclismo",
-        "url": GOOGLE.format(q=urllib.parse.quote('(ciclismo OR MTB OR gravel OR mountain bike) when:7d')),
+        "url": gnews('(ciclismo OR MTB OR gravel OR mountain bike) when:7d'),
         "category": "Deportes",
-        "quality": 10,
+        "quality": 11,
     },
     {
         "name": "Camping y aventura",
-        "url": GOOGLE.format(q=urllib.parse.quote('(camping OR acampada OR aventura outdoor OR actividades al aire libre) when:7d')),
+        "url": gnews('(camping OR acampada OR aventura outdoor OR actividades al aire libre) when:7d'),
         "category": "Outdoor",
         "quality": 9,
     },
     {
         "name": "Equipamiento outdoor",
-        "url": GOOGLE.format(q=urllib.parse.quote('(equipamiento montaña OR botas trekking OR mochila senderismo OR ropa técnica outdoor) when:7d')),
+        "url": gnews('(equipamiento montaña OR botas trekking OR mochila senderismo OR ropa técnica outdoor OR material trail) when:7d'),
         "category": "Novedades",
-        "quality": 11,
+        "quality": 12,
+    },
+    {
+        "name": "Outdoor España",
+        "url": gnews('((senderismo OR montaña OR trail OR ciclismo) España) when:7d'),
+        "category": "España",
+        "quality": 10,
+    },
+    {
+        "name": "Outdoor internacional",
+        "url": gnews('(Everest OR Himalaya OR Alpes OR expedición montaña OR alpinismo internacional) when:7d'),
+        "category": "Internacional",
+        "quality": 10,
+    },
+    {
+        "name": "Tecnología outdoor",
+        "url": gnews('(Garmin OR Suunto OR GPS senderismo OR e-bike OR reloj deportivo OR tecnología outdoor) when:7d'),
+        "category": "Tecnología",
+        "quality": 12,
     },
     {
         "name": "Escalada y expediciones",
-        "url": GOOGLE.format(q=urllib.parse.quote('(escalada OR expedición montaña OR cumbre alpinismo) when:7d')),
+        "url": gnews('(escalada OR expedición montaña OR cumbre alpinismo) when:7d'),
         "category": "Outdoor",
         "quality": 9,
     },
@@ -89,6 +106,15 @@ FALLBACK_IMAGES = {
 REJECT = {
     "amazon", "temu", "aliexpress", "black friday", "cupón", "cupon", "código descuento",
     "codigo descuento", "chollo", "apuestas", "casino", "horóscopo", "horoscopo"
+}
+
+MIN_PER_CATEGORY = {
+    "Outdoor": 4,
+    "Deportes": 4,
+    "Novedades": 3,
+    "España": 2,
+    "Internacional": 2,
+    "Tecnología": 2,
 }
 
 
@@ -160,6 +186,12 @@ def is_duplicate(title: str, existing: list[dict]) -> bool:
     return False
 
 
+def is_stale_title(title: str) -> bool:
+    current_year = NOW.astimezone(MADRID).year
+    years = [int(y) for y in re.findall(r"\b20\d{2}\b", title)]
+    return any(year < current_year - 1 for year in years)
+
+
 def image_from_item(item: ET.Element, description: str, category: str) -> str:
     for element in item.iter():
         tag = element.tag.lower()
@@ -202,6 +234,17 @@ def link_from_item(item: ET.Element) -> str:
     return ""
 
 
+def refine_category(category: str, title: str) -> str:
+    low = title.lower()
+    tech = ("garmin", "suunto", "gps", "reloj", "smartwatch", "e-bike", "ebike", "motor", "sensor", "app ")
+    gear = ("zapatilla", "bota", "mochila", "chaqueta", "material", "equipamiento", "casco", "tienda de campaña")
+    if category not in {"España", "Internacional"} and any(k in low for k in tech):
+        return "Tecnología"
+    if category in {"Outdoor", "Deportes"} and any(k in low for k in gear):
+        return "Novedades"
+    return category
+
+
 def make_summary(title: str, raw_description: str, source: str, category: str) -> tuple[str, str]:
     desc = clean_html(raw_description)
     title_key = norm_title(title)[:55]
@@ -218,12 +261,18 @@ def make_summary(title: str, raw_description: str, source: str, category: str) -
     return summary, details
 
 
+def format_time(dt: datetime) -> str:
+    months = {1:"ene",2:"feb",3:"mar",4:"abr",5:"may",6:"jun",7:"jul",8:"ago",9:"sep",10:"oct",11:"nov",12:"dic"}
+    local = dt.astimezone(MADRID)
+    return f"{local.day} {months[local.month]} {local.year} · {local:%H:%M}"
+
+
 def parse_feed(config: dict) -> list[dict]:
     xml = fetch(config["url"])
     root = ET.fromstring(xml)
     nodes = [n for n in root.iter() if n.tag.lower().endswith("item") or n.tag.lower().endswith("entry")]
     output = []
-    for item in nodes[:35]:
+    for item in nodes[:40]:
         title = clean_html(node_text(item, ("title",)))
         link = link_from_item(item)
         if not title or not link:
@@ -232,14 +281,15 @@ def parse_feed(config: dict) -> list[dict]:
         if source and title.lower().endswith(" - " + source.lower()):
             title = title[: -(len(source) + 3)].strip()
         low = title.lower()
-        if any(word in low for word in REJECT):
+        if any(word in low for word in REJECT) or is_stale_title(title):
             continue
         raw_desc = node_text(item, ("description", "summary", "content"))
         pub = node_text(item, ("pubdate", "published", "updated", "date"))
         dt = parse_date(pub)
         if NOW - dt > MAX_AGE:
             continue
-        summary, details = make_summary(title, raw_desc, source, config["category"])
+        category = refine_category(config["category"], title)
+        summary, details = make_summary(title, raw_desc, source, category)
         age_hours = max(0, (NOW - dt).total_seconds() / 3600)
         score = max(50, 100 + config.get("quality", 0) - int(age_hours / 8))
         output.append({
@@ -247,11 +297,11 @@ def parse_feed(config: dict) -> list[dict]:
             "title": trim(title, 155),
             "summary": summary,
             "details": details,
-            "category": config["category"],
+            "category": category,
             "source": source,
-            "time": dt.astimezone(MADRID).strftime("%-d %b %Y · %H:%M").replace("Sep", "sep").replace("Aug", "ago").replace("Oct", "oct").replace("Nov", "nov").replace("Dec", "dic").replace("Jan", "ene").replace("Feb", "feb").replace("Mar", "mar").replace("Apr", "abr").replace("May", "may").replace("Jun", "jun").replace("Jul", "jul"),
+            "time": format_time(dt),
             "url": link,
-            "image": image_from_item(item, raw_desc, config["category"]),
+            "image": image_from_item(item, raw_desc, category),
             "featured": False,
             "score": score,
             "published_ts": dt.timestamp(),
@@ -286,6 +336,19 @@ def prepare_owned() -> list[dict]:
     return owned[:5]
 
 
+def can_add(item: dict, selected: list[dict], source_counts: dict) -> bool:
+    if source_counts.get(item["source"], 0) >= 4:
+        return False
+    if is_duplicate(item["title"], selected):
+        return False
+    return True
+
+
+def add_item(item: dict, selected: list[dict], source_counts: dict) -> None:
+    selected.append(item)
+    source_counts[item["source"]] = source_counts.get(item["source"], 0) + 1
+
+
 def main() -> None:
     fallback = load_json(DATA_FILE, [])
     candidates = []
@@ -297,44 +360,52 @@ def main() -> None:
             errors.append(f"{config['name']}: {exc}")
 
     candidates.sort(key=lambda x: (x.get("score", 0), x.get("published_ts", 0)), reverse=True)
-    selected = []
-    source_counts = {}
-    category_counts = {}
+    selected: list[dict] = []
+    source_counts: dict[str, int] = {}
+
+    # Primero garantiza variedad para que todas las categorías que ya existen en el diseño tengan contenido.
+    for category, minimum in MIN_PER_CATEGORY.items():
+        added = 0
+        for item in candidates:
+            if item["category"] != category or not can_add(item, selected, source_counts):
+                continue
+            add_item(item, selected, source_counts)
+            added += 1
+            if added >= minimum:
+                break
+
+    # Después completa la portada con la actualidad más reciente y relevante.
     for item in candidates:
-        source = item["source"]
-        category = item["category"]
-        if source_counts.get(source, 0) >= 4:
-            continue
-        if category_counts.get(category, 0) >= 11:
-            continue
-        if is_duplicate(item["title"], selected):
-            continue
-        selected.append(item)
-        source_counts[source] = source_counts.get(source, 0) + 1
-        category_counts[category] = category_counts.get(category, 0) + 1
         if len(selected) >= MAX_ITEMS:
             break
+        if not can_add(item, selected, source_counts):
+            continue
+        add_item(item, selected, source_counts)
 
     if len(selected) < 8:
         print(f"Solo se obtuvieron {len(selected)} noticias automáticas; se conserva la edición de respaldo.")
         selected = [dict(x) for x in fallback]
     else:
+        selected.sort(key=lambda x: (x.get("score", 0), x.get("published_ts", 0)), reverse=True)
         for item in selected[:4]:
             item["featured"] = True
         for item in selected:
             item.pop("published_ts", None)
 
     owned = prepare_owned()
-    # Integra contenido propio sin convertir la portada en un escaparate comercial.
-    for own in reversed(owned):
-        position = min(6, len(selected))
-        selected.insert(position, own)
+    # Distribuye reviews/landings propias entre noticias externas: presencia comercial sin saturar.
+    slots = [6, 12, 18, 24, 28]
+    for own, slot in zip(owned, slots):
+        selected.insert(min(slot, len(selected)), own)
 
-    # Mantiene un máximo razonable de tarjetas en portada.
     selected = selected[: MAX_ITEMS + len(owned)]
     DATA_FILE.write_text(json.dumps(selected, ensure_ascii=False, indent=2), encoding="utf-8")
 
+    counts = {}
+    for item in selected:
+        counts[item.get("category", "Otros")] = counts.get(item.get("category", "Otros"), 0) + 1
     print(f"Te Equipamos News: {len(selected)} contenidos preparados ({len(owned)} propios).")
+    print("Distribución:", ", ".join(f"{k}={v}" for k, v in sorted(counts.items())))
     if errors:
         print("Fuentes que no respondieron (se ignoran sin romper la web):")
         for error in errors:
