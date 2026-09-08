@@ -1,0 +1,32 @@
+[
+  {
+    "id": 910001,
+    "active": true,
+    "owned": true,
+    "title": "¿Qué puedes hacer realmente con una mochila de 27 litros? Una capacidad muy versátil para el día a día y las rutas",
+    "summary": "Te Equipamos reúne en una landing propia los puntos clave de una mochila de 27 L pensada para combinar senderismo, escapadas y uso cotidiano.",
+    "details": "Contenido propio de Te Equipamos. La idea de esta sección es conectar noticias y guías con análisis, reviews y landings útiles sin convertir el portal en una tienda ni interrumpir la lectura.",
+    "category": "Novedades",
+    "source": "Review Te Equipamos",
+    "time": "Review propia",
+    "url": "https://jorgesport.github.io/te-equipamos-arpenaz-27l/",
+    "image": "https://images.unsplash.com/photo-1551632811-561732d1e306?auto=format&fit=crop&w=1200&q=82",
+    "featured": false,
+    "score": 94
+  },
+  {
+    "id": 910002,
+    "active": false,
+    "owned": true,
+    "title": "EJEMPLO: título de una futura review, guía o landing de Te Equipamos",
+    "summary": "Sustituye este texto por un resumen corto que explique por qué merece la pena abrir el contenido.",
+    "details": "Aquí puedes ampliar el contexto de la guía, review, producto o novedad propia.",
+    "category": "Novedades",
+    "source": "Te Equipamos",
+    "time": "Contenido propio",
+    "url": "https://equipatee.com/",
+    "image": "https://images.unsplash.com/photo-1464822759844-d150baec0494?auto=format&fit=crop&w=1200&q=82",
+    "featured": false,
+    "score": 90
+  }
+]
